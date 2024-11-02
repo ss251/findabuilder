@@ -36,6 +36,7 @@ interface Message {
     bio: string;
     location: string;
     tags: string[];
+    image_url?: string;
   };
   activity_score?: number;
   identity_score?: number;
@@ -43,6 +44,9 @@ interface Message {
   score?: number;
   human_checkmark?: boolean;
   credentials?: TalentCredential[];
+  socials?: { profile_name: string; source: string; }[];
+  verified?: boolean;
+  verified_wallets?: string[];
 }
 
 const searchBuilders = async (query: string) => {
@@ -93,22 +97,28 @@ export default function TalentScoutChat() {
         const result = await searchBuilders(inputValue);
         setMessages(prev => [...prev, { type: 'bot', content: result.content }]);
         
-        for (const builder of result.builders) {
-          setMessages(prev => [...prev, { 
-            type: 'profile',
-            passport_profile: {
-              display_name: builder.name,
-              bio: builder.description,
-              location: builder.location,
-              tags: builder.tags
-            },
-            activity_score: builder.activity_score,
-            identity_score: builder.identity_score,
-            skills_score: builder.skills_score,
-            score: builder.score,
-            human_checkmark: builder.human_checkmark,
-            credentials: builder.credentials
-          }]);
+        if (result.builders?.length > 0) {
+          for (const builder of result.builders) {
+            setMessages(prev => [...prev, { 
+              type: 'profile',
+              passport_profile: {
+                display_name: builder.name,
+                bio: builder.description,
+                location: builder.location,
+                tags: builder.tags,
+                image_url: builder.image_url
+              },
+              activity_score: builder.activity_score,
+              identity_score: builder.identity_score,
+              skills_score: builder.skills_score,
+              score: builder.score,
+              human_checkmark: builder.human_checkmark,
+              credentials: builder.credentials,
+              socials: builder.socials,
+              verified: builder.verified,
+              verified_wallets: builder.verified_wallets
+            }]);
+          }
         }
       } catch (err) {
         const error = err as Error;
@@ -190,14 +200,40 @@ export default function TalentScoutChat() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-12 w-12 border border-gray-700">
-                        <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${message.passport_profile?.display_name}`} />
+                        <AvatarImage 
+                          src={message.passport_profile?.image_url || 
+                            `https://api.dicebear.com/6.x/initials/svg?seed=${message.passport_profile?.display_name}`
+                          } 
+                        />
                         <AvatarFallback>{message.passport_profile?.display_name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-xl font-bold text-white">{message.passport_profile?.display_name}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-xl font-bold text-white">
+                            {message.passport_profile?.display_name}
+                          </CardTitle>
+                          {message.verified && (
+                            <Badge variant="secondary" className="bg-green-500/10 text-green-500">
+                              Verified
+                            </Badge>
+                          )}
+                        </div>
                         <CardDescription className="text-gray-400 flex items-center">
                           <MapPin className="h-4 w-4 mr-1" /> {message.passport_profile?.location}
                         </CardDescription>
+                        {message.socials && message.socials.length > 0 && (
+                          <div className="flex gap-2 mt-1">
+                            {message.socials.map((social, i) => (
+                              <Badge 
+                                key={i} 
+                                variant="outline" 
+                                className="text-xs"
+                              >
+                                {social.source}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
