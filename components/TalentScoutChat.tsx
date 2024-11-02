@@ -249,7 +249,7 @@ export default function TalentScoutChat() {
         </div>
 
         <div className="mb-6">
-          <div className="flex flex-wrap gap-2 mb-4">
+          {/* <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="secondary" className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 text-gray-200 hover:bg-gray-800/50 cursor-pointer">
               who&apos;s hiring
             </Badge>
@@ -259,7 +259,7 @@ export default function TalentScoutChat() {
             <Badge variant="secondary" className="bg-gray-800 text-gray-200 hover:bg-gray-700 cursor-pointer transition-colors duration-200">
               solidity devs
             </Badge>
-          </div>
+          </div> */}
           <div className="relative">
             <Input
               type="text"
