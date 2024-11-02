@@ -267,51 +267,54 @@ export default function TalentScoutChat() {
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               {message.type === 'profile' ? (
-                <Card className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 w-full max-w-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-gray-700">
+                <Card className="bg-gray-900/50 backdrop-blur-sm border-0 w-full max-w-md overflow-hidden transition-all duration-300 hover:shadow-lg rounded-xl">
                   <CardHeader className="pb-2">
-                    <div className="flex items-center space-x-4">
-                      <Avatar className="h-12 w-12 border border-gray-700">
+                    <div className="flex items-start gap-4">
+                      <Avatar className="h-16 w-16 rounded-xl border border-gray-800/50">
                         <AvatarImage 
                           src={message.passport_profile?.image_url || 
                             `https://api.dicebear.com/6.x/initials/svg?seed=${message.passport_profile?.display_name}`
                           } 
+                          className="rounded-xl"
                         />
-                        <AvatarFallback>{message.passport_profile?.display_name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="rounded-xl">{message.passport_profile?.display_name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-xl font-bold text-white">
                             {message.passport_profile?.display_name}
                           </CardTitle>
                           {message.verified && (
-                            <Badge variant="secondary" className="bg-green-500/10 text-green-500">
+                            <Badge className="bg-green-500/10 text-green-500 px-2 py-0.5 text-xs font-medium rounded-full">
                               Verified
                             </Badge>
                           )}
                         </div>
-                        <CardDescription className="text-gray-400 flex items-center">
+                        <CardDescription className="text-gray-400 flex items-center mb-3">
                           <MapPin className="h-4 w-4 mr-1" /> {message.passport_profile?.location}
                         </CardDescription>
                         {message.socials && message.socials.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-1">
+                          <div className="flex flex-wrap gap-1.5">
                             {message.socials.map((social, i) => (
                               <a 
                                 key={i}
                                 href={social.profile_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center"
+                                className="group flex-shrink-0"
                               >
                                 <Badge 
                                   variant="outline" 
-                                  className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 flex items-center gap-2 transition-colors"
+                                  className="bg-gray-800/30 hover:bg-gray-700/30 text-gray-300 px-2 py-1 flex items-center gap-1.5 transition-all duration-200 rounded-lg border-gray-700/30"
                                 >
                                   <img 
                                     src={SOCIAL_ICONS[social.source as keyof typeof SOCIAL_ICONS]} 
                                     alt={social.source}
-                                    className="w-4 h-4 object-contain"
+                                    className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100"
                                   />
-                                  <span>{social.profile_name}</span>
+                                  <span className="truncate text-xs group-hover:text-white transition-colors max-w-[120px]">
+                                    {social.profile_name}
+                                  </span>
                                 </Badge>
                               </a>
                             ))}
@@ -320,34 +323,60 @@ export default function TalentScoutChat() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-300 mb-4">{message.passport_profile?.bio}</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-gray-300">{message.passport_profile?.bio}</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {message.passport_profile?.tags.map((tag, i) => (
-                        <Badge key={`${tag}-${i}`} variant="secondary" className="bg-gray-800/50 text-gray-200 hover:bg-gray-700/50">
+                        <Badge 
+                          key={`${tag}-${i}`} 
+                          variant="secondary" 
+                          className="bg-indigo-500/5 text-indigo-300 hover:bg-indigo-500/10 rounded-lg text-xs py-1 px-2"
+                        >
                           {tag}
                         </Badge>
                       ))}
                     </div>
-                    <div className="space-y-3">
+                    <div className="grid gap-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Activity</span>
-                        <Progress value={message.activity_score} className="w-2/3 bg-gray-800" />
+                        <span className="text-xs text-gray-400 w-16">Activity</span>
+                        <div className="flex-1 mx-3">
+                          <Progress 
+                            value={message.activity_score} 
+                            className="h-1.5 [&>div]:bg-indigo-500 bg-gray-800/50" 
+                          />
+                        </div>
+                        <span className="text-xs text-gray-300 w-8 text-right">{message.activity_score}%</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Identity</span>
-                        <Progress value={message.identity_score} className="w-2/3 bg-gray-800" />
+                        <span className="text-xs text-gray-400 w-16">Identity</span>
+                        <div className="flex-1 mx-3">
+                          <Progress 
+                            value={message.identity_score} 
+                            className="h-1.5 [&>div]:bg-indigo-500 bg-gray-800/50" 
+                          />
+                        </div>
+                        <span className="text-xs text-gray-300 w-8 text-right">{message.identity_score}%</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-400">Skills</span>
-                        <Progress value={message.skills_score} className="w-2/3 bg-gray-800" />
+                        <span className="text-xs text-gray-400 w-16">Skills</span>
+                        <div className="flex-1 mx-3">
+                          <Progress 
+                            value={message.skills_score} 
+                            className="h-1.5 [&>div]:bg-indigo-500 bg-gray-800/50" 
+                          />
+                        </div>
+                        <span className="text-xs text-gray-300 w-8 text-right">{message.skills_score}%</span>
                       </div>
                     </div>
-                    <div className="mt-4 flex justify-between items-center">
-                      <Badge className="bg-indigo-500 text-white px-3 py-1 text-lg font-bold">
+                    <div className="flex justify-between items-center pt-2">
+                      <Badge className="bg-indigo-500/10 text-indigo-300 px-3 py-1 text-lg font-bold rounded-lg border border-indigo-500/20">
                         {message.score}
                       </Badge>
-                      <Button variant="outline" size="sm" className="text-indigo-400 border-indigo-400 hover:bg-indigo-400 hover:text-white">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10 hover:text-indigo-300 rounded-lg"
+                      >
                         <Zap className="mr-2 h-4 w-4" /> Connect
                       </Button>
                     </div>
