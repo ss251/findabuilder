@@ -44,9 +44,45 @@ interface Message {
   score?: number;
   human_checkmark?: boolean;
   credentials?: TalentCredential[];
-  socials?: { profile_name: string; source: string; }[];
+  socials?: { profile_name: string; source: string; profile_url: string }[];
   verified?: boolean;
   verified_wallets?: string[];
+}
+
+interface PassportSocial {
+  profile_name: string;
+  source: string;
+  profile_url: string;
+  profile_image_url: string;
+  profile_display_name: string;
+  follower_count: number;
+  following_count: number;
+  profile_bio: string;
+}
+
+interface BuilderResponse {
+  name?: string;
+  passport_profile?: {
+    display_name: string;
+    bio: string;
+    location: string | null;
+    tags: string[];
+    image_url: string;
+  };
+  description?: string;
+  location?: string;
+  tags?: string[];
+  image_url?: string;
+  activity_score: number;
+  identity_score: number;
+  skills_score: number;
+  score: number;
+  human_checkmark: boolean;
+  credentials?: TalentCredential[];
+  socials?: PassportSocial[];
+  passport_socials?: PassportSocial[];
+  verified: boolean;
+  verified_wallets: string[];
 }
 
 const searchBuilders = async (query: string) => {
@@ -69,6 +105,13 @@ const searchBuilders = async (query: string) => {
     throw error;
   }
 };
+
+const SOCIAL_ICONS = {
+  basename: "https://www.base.org/_next/static/media/usernameBaseLogo.c13052c9.svg",
+  farcaster: "https://raw.githubusercontent.com/vrypan/farcaster-brand/main/icons/icon-rounded/purple-white.png",
+  github: "https://w7.pngwing.com/pngs/646/324/png-transparent-github-computer-icons-github-logo-monochrome-head-thumbnail.png",
+  lens: "https://avatars.githubusercontent.com/u/108458858?s=200&v=4"
+} as const;
 
 export default function TalentScoutChat() {
   const [messages, setMessages] = useState<Message[]>([
@@ -97,8 +140,36 @@ export default function TalentScoutChat() {
         const result = await searchBuilders(inputValue);
         setMessages(prev => [...prev, { type: 'bot', content: result.content }]);
         
-        if (result.builders?.length > 0) {
-          for (const builder of result.builders) {
+        const builders = result.builders?.map((builder: BuilderResponse) => {
+          return {
+            name: builder.name || builder.passport_profile?.display_name,
+            description: builder.description || builder.passport_profile?.bio,
+            location: builder.location || builder.passport_profile?.location || 'Remote',
+            tags: builder.tags || builder.passport_profile?.tags || [],
+            image_url: builder.image_url || builder.passport_profile?.image_url,
+            activity_score: builder.activity_score,
+            identity_score: builder.identity_score,
+            skills_score: builder.skills_score,
+            score: builder.score,
+            human_checkmark: builder.human_checkmark,
+            credentials: builder.credentials || [],
+            socials: builder.socials || builder.passport_socials?.map((social: PassportSocial) => ({
+              profile_name: social.profile_name,
+              source: social.source,
+              profile_url: social.profile_url,
+              profile_image_url: social.profile_image_url,
+              profile_display_name: social.profile_display_name,
+              follower_count: social.follower_count,
+              following_count: social.following_count,
+              profile_bio: social.profile_bio
+            })),
+            verified: builder.verified,
+            verified_wallets: builder.verified_wallets
+          };
+        });
+
+        if (builders?.length > 0) {
+          for (const builder of builders) {
             setMessages(prev => [...prev, { 
               type: 'profile',
               passport_profile: {
@@ -222,15 +293,27 @@ export default function TalentScoutChat() {
                           <MapPin className="h-4 w-4 mr-1" /> {message.passport_profile?.location}
                         </CardDescription>
                         {message.socials && message.socials.length > 0 && (
-                          <div className="flex gap-2 mt-1">
+                          <div className="flex flex-wrap gap-2 mt-1">
                             {message.socials.map((social, i) => (
-                              <Badge 
-                                key={i} 
-                                variant="outline" 
-                                className="text-xs"
+                              <a 
+                                key={i}
+                                href={social.profile_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center"
                               >
-                                {social.source}
-                              </Badge>
+                                <Badge 
+                                  variant="outline" 
+                                  className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 flex items-center gap-2 transition-colors"
+                                >
+                                  <img 
+                                    src={SOCIAL_ICONS[social.source as keyof typeof SOCIAL_ICONS]} 
+                                    alt={social.source}
+                                    className="w-4 h-4 object-contain"
+                                  />
+                                  <span>{social.profile_name}</span>
+                                </Badge>
+                              </a>
                             ))}
                           </div>
                         )}

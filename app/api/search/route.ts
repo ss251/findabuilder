@@ -75,20 +75,28 @@ const processQuery = async (query: string): Promise<SearchFilters> => {
         messages: [
           { 
             role: "system", 
-            content: `Extract search parameters from queries about web3 builders.
-            Return JSON with:
-            - searchByName (boolean): true if query is looking for specific person/username
-            - name (string): the name/username to search for
-            - minScore (number | null): minimum score if specified
-            - searchById (boolean): true if query contains passport ID or wallet address
-            - id (string): the passport ID or wallet address if present
+            content: `You are a JSON parser that extracts search parameters. 
+            ONLY return a JSON object, no explanations.
+            NEVER include any text before or after the JSON.
+            The JSON must have these exact fields:
+            - searchByName (boolean)
+            - name (string)
+            - minScore (number | null)
+            - searchById (boolean)
+            - id (string)
             
-            Examples:
-            "find thescoho" -> {"searchByName":true,"name":"thescoho","minScore":null,"searchById":false,"id":""}
-            "show me 0x09928cebb4c977c5e5db237a2a2ce5cd10497cb8" -> {"searchByName":false,"name":"","minScore":null,"searchById":true,"id":"0x09928cebb4c977c5e5db237a2a2ce5cd10497cb8"}
-            "get passport 794066" -> {"searchByName":false,"name":"","minScore":null,"searchById":true,"id":"794066"}`
+            If query contains a wallet address (0x...) or passport ID, set searchById to true and put the value in id.`
           },
-          { role: "user", content: query }
+          {
+            role: "user",
+            content: `Parse this query into JSON. Examples:
+            "find thescoho" -> {"searchByName":true,"name":"thescoho","minScore":null,"searchById":false,"id":""}
+            "who is sailesh" -> {"searchByName":true,"name":"sailesh","minScore":null,"searchById":false,"id":""}
+            "builders with score >40" -> {"searchByName":false,"name":"","minScore":40,"searchById":false,"id":""}
+            "show wallet 0x09928cebb4c977c5e5db237a2a2ce5cd10497cb8" -> {"searchByName":false,"name":"","minScore":null,"searchById":true,"id":"0x09928cebb4c977c5e5db237a2a2ce5cd10497cb8"}
+            "find passport 794066" -> {"searchByName":false,"name":"","minScore":null,"searchById":true,"id":"794066"}
+            Query: "${query}"`
+          }
         ],
         temperature: 0.1,
         response_format: { type: "json_object" }
@@ -103,10 +111,10 @@ const processQuery = async (query: string): Promise<SearchFilters> => {
       
       // Convert string values to proper types
       return {
-        searchByName: parsed.searchByName === "true",
+        searchByName: Boolean(parsed.searchByName),
         name: String(parsed.name || ""),
-        minScore: parsed.minScore === "null" ? null : Number(parsed.minScore),
-        searchById: parsed.searchById === "true",
+        minScore: parsed.minScore === null ? null : Number(parsed.minScore),
+        searchById: Boolean(parsed.searchById),
         id: String(parsed.id || "")
       };
     } catch (e) {
@@ -128,10 +136,10 @@ export async function POST(request: Request) {
     console.log('Processed filters:', filters);
 
     if (filters.searchById && filters.id) {
-      const isWallet = filters.id.startsWith('0x');
-      const endpoint = isWallet ? filters.id : filters.id;
+      const isWallet = filters.id.toLowerCase().startsWith('0x');
+      const endpoint = filters.id;
       
-      console.log('Searching by ID:', endpoint);
+      console.log(`Searching by ${isWallet ? 'wallet address' : 'passport ID'}:`, endpoint);
 
       const response = await fetch(
         `https://api.talentprotocol.com/api/v2/passports/${endpoint}`,
@@ -144,11 +152,15 @@ export async function POST(request: Request) {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch passport');
+        console.error('Failed to fetch passport:', {
+          status: response.status,
+          statusText: response.statusText
+        });
+        throw new Error(`Failed to fetch passport by ${isWallet ? 'wallet' : 'ID'}`);
       }
 
       const data = await response.json();
-      console.log('Found passport by ID');
+      console.log(`Found passport by ${isWallet ? 'wallet' : 'ID'}`);
 
       const builder = {
         id: data.passport.main_wallet,
