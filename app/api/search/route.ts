@@ -78,23 +78,28 @@ const processQuery = async (query: string): Promise<SearchFilters> => {
             content: `You are a JSON parser that extracts search parameters. 
             ONLY return a JSON object, no explanations.
             NEVER include any text before or after the JSON.
+            
+            Rules for parsing:
+            1. searchByName is true ONLY when searching for a specific person's name/username
+            2. General queries about "builders" should NOT be treated as name searches
+            3. If query contains score criteria, extract the number after ">" or "greater than"
+            4. If query contains a wallet (0x...) or passport ID, set searchById to true
+            
             The JSON must have these exact fields:
             - searchByName (boolean)
             - name (string)
             - minScore (number | null)
             - searchById (boolean)
-            - id (string)
-            
-            If query contains a wallet address (0x...) or passport ID, set searchById to true and put the value in id.`
+            - id (string)`
           },
           {
             role: "user",
             content: `Parse this query into JSON. Examples:
             "find thescoho" -> {"searchByName":true,"name":"thescoho","minScore":null,"searchById":false,"id":""}
             "who is sailesh" -> {"searchByName":true,"name":"sailesh","minScore":null,"searchById":false,"id":""}
-            "builders with score >40" -> {"searchByName":false,"name":"","minScore":40,"searchById":false,"id":""}
+            "find the best builders with score > 50" -> {"searchByName":false,"name":"","minScore":50,"searchById":false,"id":""}
+            "show me all builders" -> {"searchByName":false,"name":"","minScore":null,"searchById":false,"id":""}
             "show wallet 0x09928cebb4c977c5e5db237a2a2ce5cd10497cb8" -> {"searchByName":false,"name":"","minScore":null,"searchById":true,"id":"0x09928cebb4c977c5e5db237a2a2ce5cd10497cb8"}
-            "find passport 794066" -> {"searchByName":false,"name":"","minScore":null,"searchById":true,"id":"794066"}
             Query: "${query}"`
           }
         ],
