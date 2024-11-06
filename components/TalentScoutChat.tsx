@@ -7,14 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { Wallet, Menu, Search, MapPin, Zap } from 'lucide-react'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { Search, MapPin, Zap } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -129,10 +122,9 @@ const SOCIAL_ICONS = {
 
 export default function TalentScoutChat() {
   const [messages, setMessages] = useState<Message[]>([
-    { type: 'bot', content: "Welcome to findabuilder, powered by AI. Discover talented builders in the web3 space." }
+    { type: 'bot', content: "Welcome to findabuilder, powered by Galadriel AI and Talent Protocol. Discover talented builders in the web3 space." }
   ]);
   const [inputValue, setInputValue] = useState('')
-  const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -245,9 +237,6 @@ export default function TalentScoutChat() {
     }
   };
 
-  const handleWalletConnection = () => {
-    setIsWalletConnected(!isWalletConnected);
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -284,7 +273,7 @@ export default function TalentScoutChat() {
               <Wallet className="mr-2 h-4 w-4" /> 
               {isWalletConnected ? 'Connected' : 'Connect Wallet'}
             </Button> */}
-            <Sheet>
+            {/* <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="h-5 w-5" />
@@ -306,7 +295,7 @@ export default function TalentScoutChat() {
                   </Button>
                 </div>
               </SheetContent>
-            </Sheet>
+            </Sheet> */}
           </div>
         </div>
       </nav>
@@ -427,14 +416,16 @@ export default function TalentScoutChat() {
                       <Badge className="bg-indigo-500/10 text-indigo-300 px-3 py-1 text-lg font-bold rounded-lg border border-indigo-500/20">
                         {message.score}
                       </Badge>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10 hover:text-indigo-300 rounded-lg"
-                        onClick={() => handleConnectBuilder(message.verified_wallets?.[0] || '')}
-                      >
-                        <Zap className="mr-2 h-4 w-4" /> Connect
-                      </Button>
+                      {(!message.socials || message.socials.length === 0) && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10 hover:text-indigo-300 rounded-lg bg-transparent"
+                          onClick={() => handleConnectBuilder(message.verified_wallets?.[0] || '')}
+                        >
+                          <Zap className="mr-2 h-4 w-4" /> Connect
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
