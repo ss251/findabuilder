@@ -4,10 +4,12 @@ const TALENT_API_KEY = process.env.TALENT_API_KEY || '';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!params?.id) {
+    const { id } = await context.params;
+
+    if (!id) {
       return NextResponse.json(
         { error: 'Builder ID is required' },
         { status: 400 }
@@ -15,7 +17,7 @@ export async function GET(
     }
 
     const response = await fetch(
-      `https://api.talentprotocol.com/api/v2/passports/${params.id}`,
+      `https://api.talentprotocol.com/api/v2/passports/${id}`,
       {
         headers: {
           'X-API-KEY': TALENT_API_KEY,

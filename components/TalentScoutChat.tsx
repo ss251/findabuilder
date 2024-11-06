@@ -156,8 +156,35 @@ export default function TalentScoutChat() {
         const result = await searchBuilders(inputValue);
         setMessages(prev => [...prev, { type: 'bot', content: result.content }]);
         
-        const builders = result.builders?.map((builder: BuilderResponse) => {
-          return {
+        if (result.builders?.length === 1) {
+          const builderId = result.builders[0].verified_wallets[0];
+          const detailedResponse = await fetch(`/api/builder/${builderId}`);
+          if (detailedResponse.ok) {
+            const detailedBuilder = await detailedResponse.json();
+            setMessages(prev => [...prev, { 
+              type: 'profile',
+              passport_profile: {
+                display_name: detailedBuilder.name,
+                bio: detailedBuilder.description,
+                location: detailedBuilder.location,
+                tags: detailedBuilder.tags,
+                image_url: detailedBuilder.image_url
+              },
+              activity_score: detailedBuilder.activity_score,
+              identity_score: detailedBuilder.identity_score,
+              skills_score: detailedBuilder.skills_score,
+              score: detailedBuilder.score,
+              human_checkmark: detailedBuilder.human_checkmark,
+              credentials: detailedBuilder.credentials,
+              socials: detailedBuilder.socials,
+              verified: detailedBuilder.verified,
+              verified_wallets: detailedBuilder.verified_wallets
+            }]);
+          } else {
+            throw new Error('Failed to fetch detailed builder profile');
+          }
+        } else {
+          const builders = result.builders?.map((builder: BuilderResponse) => ({
             name: builder.name || builder.passport_profile?.display_name,
             description: builder.description || builder.passport_profile?.bio,
             location: builder.location || builder.passport_profile?.location || 'Remote',
@@ -172,39 +199,34 @@ export default function TalentScoutChat() {
             socials: builder.socials || builder.passport_socials?.map((social: PassportSocial) => ({
               profile_name: social.profile_name,
               source: social.source,
-              profile_url: social.profile_url,
-              profile_image_url: social.profile_image_url,
-              profile_display_name: social.profile_display_name,
-              follower_count: social.follower_count,
-              following_count: social.following_count,
-              profile_bio: social.profile_bio
+              profile_url: social.profile_url
             })),
             verified: builder.verified,
             verified_wallets: builder.verified_wallets
-          };
-        });
+          }));
 
-        if (builders?.length > 0) {
-          for (const builder of builders) {
-            setMessages(prev => [...prev, { 
-              type: 'profile',
-              passport_profile: {
-                display_name: builder.name,
-                bio: builder.description,
-                location: builder.location,
-                tags: builder.tags,
-                image_url: builder.image_url
-              },
-              activity_score: builder.activity_score,
-              identity_score: builder.identity_score,
-              skills_score: builder.skills_score,
-              score: builder.score,
-              human_checkmark: builder.human_checkmark,
-              credentials: builder.credentials,
-              socials: builder.socials,
-              verified: builder.verified,
-              verified_wallets: builder.verified_wallets
-            }]);
+          if (builders?.length > 0) {
+            for (const builder of builders) {
+              setMessages(prev => [...prev, { 
+                type: 'profile',
+                passport_profile: {
+                  display_name: builder.name,
+                  bio: builder.description,
+                  location: builder.location,
+                  tags: builder.tags,
+                  image_url: builder.image_url
+                },
+                activity_score: builder.activity_score,
+                identity_score: builder.identity_score,
+                skills_score: builder.skills_score,
+                score: builder.score,
+                human_checkmark: builder.human_checkmark,
+                credentials: builder.credentials,
+                socials: builder.socials,
+                verified: builder.verified,
+                verified_wallets: builder.verified_wallets
+              }]);
+            }
           }
         }
       } catch (err) {
