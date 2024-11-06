@@ -134,7 +134,7 @@ const processQuery = async (query: string): Promise<SearchFilters> => {
 
 export async function POST(request: Request) {
   try {
-    const { query } = await request.json();
+    const { query, limit = 10 } = await request.json();
     console.log('Received query:', query);
 
     const filters = await processQuery(query);
@@ -192,7 +192,8 @@ export async function POST(request: Request) {
     }
 
     const searchParams = new URLSearchParams({
-      per_page: '40'
+      per_page: '40',
+      page: '1'
     });
 
     if (filters.searchByName && filters.name) {
@@ -203,26 +204,53 @@ export async function POST(request: Request) {
 
     console.log('Search params:', searchParams.toString());
 
-    const buildersResponse = await fetch(
-      `https://api.talentprotocol.com/api/v2/passports?${searchParams.toString()}`,
-      {
-        headers: {
+    const getAllBuilders = async (baseUrl: string, headers: HeadersInit): Promise<PassportResult[]> => {
+      let allBuilders: PassportResult[] = [];
+      let currentPage = 1;
+      const MAX_PAGES = Math.ceil(limit / 25); // Calculate pages needed based on limit
+      
+      while (currentPage <= MAX_PAGES) {
+        const pageParams = new URLSearchParams(searchParams);
+        pageParams.set('page', currentPage.toString());
+        
+        const response = await fetch(
+          `${baseUrl}?${pageParams.toString()}`,
+          { headers }
+        );
+
+        if (!response.ok) {
+          console.error('Failed to fetch page', currentPage);
+          break;
+        }
+
+        const data = await response.json() as PassportsResponse;
+        allBuilders = [...allBuilders, ...data.passports];
+
+        console.log('Pagination:', {
+          current: currentPage,
+          total_results: data.pagination.total,
+          results_this_page: data.passports.length,
+          total_collected: allBuilders.length
+        });
+
+        // Stop if we got fewer results than expected
+        if (data.passports.length < 25) break;
+        
+        currentPage++;
+      }
+
+      return allBuilders.slice(0, limit); // Limit the results
+    };
+
+    const buildersData = {
+      passports: await getAllBuilders(
+        'https://api.talentprotocol.com/api/v2/passports',
+        {
           'X-API-KEY': TALENT_API_KEY,
           'Content-Type': 'application/json'
         }
-      }
-    );
-
-    if (!buildersResponse.ok) {
-      console.error('Builders API error:', {
-        status: buildersResponse.status,
-        statusText: buildersResponse.statusText
-      });
-      throw new Error('Failed to fetch builders');
-    }
-
-    const buildersData = await buildersResponse.json() as PassportsResponse;
-    console.log('Total builders found:', buildersData.passports.length);
+      )
+    };
 
     const topBuilders = buildersData.passports
       .filter(builder => {
