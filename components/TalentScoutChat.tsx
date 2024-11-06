@@ -122,7 +122,7 @@ const SOCIAL_ICONS = {
 
 export default function TalentScoutChat() {
   const [messages, setMessages] = useState<Message[]>([
-    { type: 'bot', content: "Welcome to findabuilder, powered by Galadriel AI and Talent Protocol. Discover talented builders in the web3 space." }
+    { type: 'bot', content: "Welcome to findabuilder, powered by Galadriel AI and Talent Protocol. Discover talented builders in web3 through natural language prompts." }
   ]);
   const [inputValue, setInputValue] = useState('')
   const [isSearching, setIsSearching] = useState(false)
