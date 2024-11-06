@@ -16,6 +16,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface TalentCredential {
   earned_at: string;
@@ -50,14 +57,16 @@ interface Message {
 }
 
 interface PassportSocial {
-  profile_name: string;
-  source: string;
-  profile_url: string;
-  profile_image_url: string;
-  profile_display_name: string;
-  follower_count: number;
-  following_count: number;
+  disconnected: boolean;
+  follower_count: number | null;
+  following_count: number | null;
+  location: string | null;
   profile_bio: string;
+  profile_display_name: string;
+  profile_image_url: string | null;
+  profile_name: string;
+  profile_url: string;
+  source: string;
 }
 
 interface BuilderResponse {
@@ -85,6 +94,10 @@ interface BuilderResponse {
   verified_wallets: string[];
 }
 
+interface BuilderDetails extends BuilderResponse {
+  isLoading?: boolean;
+}
+
 const searchBuilders = async (query: string) => {
   try {
     const response = await fetch('/api/search', {
@@ -110,7 +123,8 @@ const SOCIAL_ICONS = {
   basename: "https://www.base.org/_next/static/media/usernameBaseLogo.c13052c9.svg",
   farcaster: "https://raw.githubusercontent.com/vrypan/farcaster-brand/main/icons/icon-rounded/purple-white.png",
   github: "https://w7.pngwing.com/pngs/646/324/png-transparent-github-computer-icons-github-logo-monochrome-head-thumbnail.png",
-  lens: "https://avatars.githubusercontent.com/u/108458858?s=200&v=4"
+  lens: "https://avatars.githubusercontent.com/u/108458858?s=200&v=4",
+  linkedin: "https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg"
 } as const;
 
 export default function TalentScoutChat() {
@@ -122,6 +136,8 @@ export default function TalentScoutChat() {
   const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [selectedBuilder, setSelectedBuilder] = useState<BuilderDetails | null>(null);
+  const [showBuilderDialog, setShowBuilderDialog] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -213,6 +229,23 @@ export default function TalentScoutChat() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
+  };
+
+  const handleConnectBuilder = async (builderId: string) => {
+    setSelectedBuilder({ isLoading: true } as BuilderDetails);
+    setShowBuilderDialog(true);
+
+    try {
+      const response = await fetch(`/api/builder/${builderId}`);
+      if (!response.ok) throw new Error('Failed to fetch builder details');
+      
+      const data = await response.json();
+      setSelectedBuilder({ ...data, isLoading: false });
+    } catch (error) {
+      console.error('Error fetching builder:', error);
+      setSelectedBuilder(null);
+      // Optionally show error message
+    }
   };
 
   return (
@@ -376,6 +409,7 @@ export default function TalentScoutChat() {
                         variant="outline" 
                         size="sm" 
                         className="text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/10 hover:text-indigo-300 rounded-lg"
+                        onClick={() => handleConnectBuilder(message.verified_wallets?.[0] || '')}
                       >
                         <Zap className="mr-2 h-4 w-4" /> Connect
                       </Button>
@@ -433,6 +467,141 @@ export default function TalentScoutChat() {
           </div>
         </div>
       </main>
+
+      <Dialog open={showBuilderDialog} onOpenChange={setShowBuilderDialog}>
+        <DialogContent className="bg-gray-900 text-white border-gray-800 sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Builder Details</DialogTitle>
+          </DialogHeader>
+          {selectedBuilder?.isLoading ? (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-12 w-12 rounded-full bg-gray-800" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[200px] bg-gray-800" />
+                  <Skeleton className="h-4 w-[150px] bg-gray-800" />
+                </div>
+              </div>
+              <Skeleton className="h-20 w-full bg-gray-800" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full bg-gray-800" />
+                <Skeleton className="h-4 w-full bg-gray-800" />
+                <Skeleton className="h-4 w-2/3 bg-gray-800" />
+              </div>
+            </div>
+          ) : selectedBuilder ? (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={selectedBuilder.image_url} />
+                  <AvatarFallback>{selectedBuilder.name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h4 className="text-lg font-semibold">{selectedBuilder.name}</h4>
+                  <p className="text-sm text-gray-400 flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" /> {selectedBuilder.location}
+                  </p>
+                </div>
+              </div>
+              
+              {selectedBuilder.socials && selectedBuilder.socials.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedBuilder.socials.map((social, i) => (
+                    <a 
+                      key={i}
+                      href={social.profile_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex-shrink-0"
+                    >
+                      <Badge 
+                        variant="outline" 
+                        className="bg-gray-800/30 hover:bg-gray-700/30 text-gray-300 px-2 py-1 flex items-center gap-1.5 transition-all duration-200 rounded-lg border-gray-700/30"
+                      >
+                        <img 
+                          src={SOCIAL_ICONS[social.source as keyof typeof SOCIAL_ICONS]} 
+                          alt={social.source}
+                          className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100"
+                        />
+                        <span className="truncate text-xs group-hover:text-white transition-colors max-w-[120px]">
+                          {social.profile_name}
+                        </span>
+                        {social.follower_count !== null && (
+                          <span className="text-xs text-gray-400 ml-1">
+                            · {social.follower_count}
+                          </span>
+                        )}
+                      </Badge>
+                    </a>
+                  ))}
+                </div>
+              )}
+              
+              <p className="text-sm text-gray-300">{selectedBuilder.description}</p>
+              
+              <div className="flex flex-wrap gap-1.5">
+                {selectedBuilder.tags?.map((tag, i) => (
+                  <Badge 
+                    key={i}
+                    variant="secondary" 
+                    className="bg-indigo-500/5 text-indigo-300 hover:bg-indigo-500/10 rounded-lg text-xs py-1 px-2"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-400 w-16">Activity</span>
+                  <div className="flex-1 mx-3">
+                    <Progress 
+                      value={selectedBuilder.activity_score} 
+                      className="h-1.5 [&>div]:bg-indigo-500 bg-gray-800/50" 
+                    />
+                  </div>
+                  <span className="text-xs text-gray-300 w-8 text-right">{selectedBuilder.activity_score}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-400 w-16">Identity</span>
+                  <div className="flex-1 mx-3">
+                    <Progress 
+                      value={selectedBuilder.identity_score} 
+                      className="h-1.5 [&>div]:bg-indigo-500 bg-gray-800/50" 
+                    />
+                  </div>
+                  <span className="text-xs text-gray-300 w-8 text-right">{selectedBuilder.identity_score}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-400 w-16">Skills</span>
+                  <div className="flex-1 mx-3">
+                    <Progress 
+                      value={selectedBuilder.skills_score} 
+                      className="h-1.5 [&>div]:bg-indigo-500 bg-gray-800/50" 
+                    />
+                  </div>
+                  <span className="text-xs text-gray-300 w-8 text-right">{selectedBuilder.skills_score}%</span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center pt-2">
+                <Badge className="bg-indigo-500/10 text-indigo-300 px-3 py-1 text-lg font-bold rounded-lg border border-indigo-500/20">
+                  {selectedBuilder.score}
+                </Badge>
+                {selectedBuilder.verified && (
+                  <Badge className="bg-green-500/10 text-green-500 px-2 py-0.5 text-xs font-medium rounded-full">
+                    Verified
+                  </Badge>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-400">
+              Failed to load builder details
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
