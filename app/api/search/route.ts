@@ -1,3 +1,6 @@
+export const maxDuration = 60; // 60 seconds timeout
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 
 const GALADRIEL_API_KEY = process.env.GALADRIEL_API_KEY || '';
