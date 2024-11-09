@@ -321,7 +321,9 @@ export default function TalentScoutChat() {
                           } 
                           className="rounded-xl"
                         />
-                        <AvatarFallback className="rounded-xl">{message.passport_profile?.display_name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="rounded-xl">
+                          {message.passport_profile?.display_name?.charAt(0) || '?'}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -526,7 +528,9 @@ export default function TalentScoutChat() {
               <div className="flex items-center space-x-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={selectedBuilder.image_url} />
-                  <AvatarFallback>{selectedBuilder.name?.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>
+                    {selectedBuilder.name?.charAt(0) || '?'}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
                   <h4 className="text-lg font-semibold">{selectedBuilder.name}</h4>
